@@ -1,0 +1,55 @@
+#!/bin/bash
+
+#Сканируем с помощью arping адреса подсеть сетевого интерфейса переданого в качестве параметра
+#Scan subnet with arping. Fist argument must be the name of net interface
+
+#check user for root 
+username=$(id -nu)
+if [ "$username" != "root" ]
+then
+        echo "Must be root to run \"$(basename "$0")\"."
+        exit 1
+fi
+
+
+INTERFACE="$1" 
+
+#check exist
+if [[ -z "$INTERFACE" ]]
+then
+    echo "\$INTERFACE must be passed as fist positional argument"
+    exit 1
+fi
+
+#get ip and mask from interface
+IP=$(ifconfig "$INTERFACE"|grep inet|sed -n '1p'| awk ' { print $2 } ')
+MASK=$(ifconfig "$INTERFACE"|grep inet|sed -n '1p'| awk ' { print $4 } ')
+
+#get octets od fist and last IP
+IFS=. read -r i1 i2 i3 i4 <<< "$IP"
+IFS=. read -r m1 m2 m3 m4 <<< "$MASK"
+START_OCTET1="$((i1 & m1))"
+START_OCTET2="$((i2 & m2))" 
+START_OCTET3="$((i3 & m3))"
+START_OCTET4="$(((i4 & m4)+1))"
+
+FINISH_OCTET1="$(((i1 & m1 | 255-m1)+1))"
+FINISH_OCTET2="$(((i2 & m2 | 255-m2)+1))"
+FINISH_OCTET3="$(((i3 & m3 | 255-m3)+1))"
+FINISH_OCTET4="$((i4 & m4 | 255-m4))"
+
+
+for ((OCTET1="$START_OCTET1";OCTET1<"$FINISH_OCTET1";OCTET1++))
+  do
+	for ((OCTET2="$START_OCTET2";OCTET2<"$FINISH_OCTET2";OCTET2++))
+	  do
+		for ((OCTET3="$START_OCTET3";OCTET3<"$FINISH_OCTET3";OCTET3++))
+        	  do
+			for ((OCTET4="$START_OCTET4";OCTET4<"$FINISH_OCTET4";OCTET4++))
+			  do
+				echo "[*] IP : $OCTET1.$OCTET2.$OCTET3.$OCTET4"
+				arping -c 3 -i "$INTERFACE" "${OCTET1}.${OCTET2}.${OCTET3}.${OCTET4}" 2> /dev/null
+			  done
+		  done
+	  done
+  done
