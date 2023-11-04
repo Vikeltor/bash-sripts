@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Сканируем с помощью arping адреса подсеть сетевого интерфейса переданого в качестве параметра
+#Сканируем с помощью arping адреса из подсети сетевого интерфейса переданого в качестве параметра
 #Scan subnet with arping. Fist argument must be the name of net interface
 
 #check user for root 
